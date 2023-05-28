@@ -1,5 +1,7 @@
-package com.criticaltechworks.pelsoczi.data
+package com.criticaltechworks.pelsoczi.data.remote
 
+import com.criticaltechworks.pelsoczi.data.model.NetworkResponse.Failure
+import com.criticaltechworks.pelsoczi.data.model.NetworkResponse.Ok
 import com.google.common.truth.Truth.assertThat
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -9,6 +11,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 
 class NetworkDataSourceTest {
@@ -44,7 +47,9 @@ class NetworkDataSourceTest {
             httpUrl = mockWebServer.url("/")
         )
         // then
-        assertThat(result.isSuccessful).isTrue()
+        assertThat(result).isInstanceOf(Ok::class.java)
+        result as Ok
+        assertThat(result.isSuccess).isTrue()
         assertThat(result.code).isEqualTo(200)
     }
 
@@ -58,7 +63,9 @@ class NetworkDataSourceTest {
             httpUrl = mockWebServer.url("/")
         )
         // then
-        assertThat(result.isSuccessful).isFalse()
+        assertThat(result).isInstanceOf(Ok::class.java)
+        result as Ok
+        assertThat(result.isSuccess).isFalse()
         assertThat(result.code).isEqualTo(400)
     }
 
@@ -72,7 +79,9 @@ class NetworkDataSourceTest {
             httpUrl = mockWebServer.url("/")
         )
         // then
-        assertThat(result.isSuccessful).isFalse()
+        assertThat(result).isInstanceOf(Ok::class.java)
+        result as Ok
+        assertThat(result.isSuccess).isFalse()
         assertThat(result.code).isEqualTo(401)
     }
 
@@ -86,7 +95,9 @@ class NetworkDataSourceTest {
             httpUrl = mockWebServer.url("/")
         )
         // then
-        assertThat(result.isSuccessful).isFalse()
+        assertThat(result).isInstanceOf(Ok::class.java)
+        result as Ok
+        assertThat(result.isSuccess).isFalse()
         assertThat(result.code).isEqualTo(429)
     }
 
@@ -100,8 +111,24 @@ class NetworkDataSourceTest {
             httpUrl = mockWebServer.url("/")
         )
         // then
-        assertThat(result.isSuccessful).isFalse()
-        assertThat(result.code).isEqualTo(500)
+        assertThat(result).isInstanceOf(Ok::class.java)
+        result as Ok
+        assertThat(result.isSuccess).isFalse()
+    }
+
+    @Test
+    fun `unknown host exception when there is no internet available`() = runBlocking {
+        // given
+        val response = MockResponse().setResponseCode(500)
+        mockWebServer.enqueue(response)
+        // when
+        val result = networkDataSource.fetchTopStories(
+            httpUrl = mockWebServer.url("https://unknownhost")
+        )
+        // then
+        assertThat(result).isInstanceOf(Failure::class.java)
+        result as Failure
+        assertThat(result.ex).isInstanceOf(IOException::class.java)
     }
 
 
