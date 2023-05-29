@@ -29,6 +29,7 @@ class NetworkDataSource @Inject constructor(
 
     /* default endpoint to request in production */
     private val httpUrl: HttpUrl = "${BuildConfig.NEWS_API}/v2/top-headlines/"
+//    private val httpUrl: HttpUrl = "https://newsapi.org/v2/everything?q=bitcoin&apiKey=88cbbeb0e4704701a2475133aea1eaef"
         .toHttpUrl()
         .newBuilder()
         .addQueryParameter("sources", context.getString(R.string.API_SOURCE))
