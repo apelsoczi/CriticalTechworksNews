@@ -1,10 +1,12 @@
 package com.criticaltechworks.pelsoczi.di
 
 import com.criticaltechworks.pelsoczi.BuildConfig
+import com.criticaltechworks.pelsoczi.util.kotlinxJson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -29,6 +31,11 @@ class NetworkModule {
             .addInterceptor(apiKeyHeaderInterceptor)
             .addInterceptor(httpLoggingInterceptor)
             .build()
+    }
+
+    @Provides
+    fun provideJson(): Json {
+        return kotlinxJson
     }
 
 }
