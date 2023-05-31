@@ -59,10 +59,5 @@ sealed interface TopStoriesResponse {
         val message: String,
     ) : TopStoriesResponse
 
-    /**
-     * Network Connection is not available to the NewsApi.
-     */
-    object InternetConnectionFailure : TopStoriesResponse
-
 }
 

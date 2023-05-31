@@ -4,7 +4,7 @@ import com.criticaltechworks.pelsoczi.data.model.NetworkResponse.Failure
 import com.criticaltechworks.pelsoczi.data.model.NetworkResponse.Ok
 import com.google.common.truth.Truth.assertThat
 import io.mockk.mockk
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -37,7 +37,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `200 request executed successfully`() = runBlocking {
+    fun `200 request executed successfully`() = runTest {
         // given
         val response = MockResponse()
             .setResponseCode(200)
@@ -54,7 +54,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `400 request unacceptable, missing or misconfigured parameter`() = runBlocking {
+    fun `400 request unacceptable, missing or misconfigured parameter`() = runTest {
         // given
         val response = MockResponse().setResponseCode(400)
         mockWebServer.enqueue(response)
@@ -70,7 +70,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `401 api key is missing or wasn't correct`() = runBlocking {
+    fun `401 api key is missing or wasn't correct`() = runTest {
         // given
         val response = MockResponse().setResponseCode(401)
         mockWebServer.enqueue(response)
@@ -86,7 +86,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `429 rate limited, too many requests made within window`() = runBlocking {
+    fun `429 rate limited, too many requests made within window`() = runTest {
         // given
         val response = MockResponse().setResponseCode(429)
         mockWebServer.enqueue(response)
@@ -102,7 +102,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `500 server error`() = runBlocking {
+    fun `500 server error`() = runTest {
         // given
         val response = MockResponse().setResponseCode(500)
         mockWebServer.enqueue(response)
@@ -117,7 +117,7 @@ class NetworkDataSourceTest {
     }
 
     @Test
-    fun `unknown host exception when there is no internet available`() = runBlocking {
+    fun `unknown host exception when there is no internet available`() = runTest{
         // given
         val response = MockResponse().setResponseCode(500)
         mockWebServer.enqueue(response)
