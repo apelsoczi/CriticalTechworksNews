@@ -2,9 +2,9 @@ package com.criticaltechworks.pelsoczi.ui.stories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.criticaltechworks.pelsoczi.data.model.TopStoriesResponse.ApiResponse.Article
 import com.criticaltechworks.pelsoczi.data.repository.NewsRepository
 import com.criticaltechworks.pelsoczi.ui.stories.StoriesViewIntent.RefreshStories
-import com.criticaltechworks.pelsoczi.util.doNothing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +26,30 @@ class StoriesViewModel @Inject constructor(
      */
     fun handle(intent: StoriesViewIntent) = viewModelScope.launch(Dispatchers.Default) {
         when (intent) {
-            RefreshStories -> doNothing
+            RefreshStories -> refreshStories()
+        }
+    }
+
+    /**
+     * Invoke the repository to fetch stories and either collect stories emissions or
+     * handle the error invoking the repository.
+     */
+    private suspend fun refreshStories() {
+        val loading = StoriesViewState(loading = true)
+        _viewState.emit(loading)
+
+        repository.stories().collect { articles: List<Article>? ->
+            when {
+                articles == null -> _viewState.emit(
+                    StoriesViewState(internetError = true)
+                )
+                articles.isNotEmpty() -> _viewState.emit(
+                    StoriesViewState(articles = articles)
+                )
+                articles.isEmpty() -> _viewState.emit(
+                    StoriesViewState(contentError = true)
+                )
+            }
         }
     }
 
