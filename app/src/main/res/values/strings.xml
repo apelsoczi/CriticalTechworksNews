@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Critical Techworks News</string>
+    <string name="no_content_title">hmmm… seems the editors are on a coffee break.</string>
+    <string name="no_content_message">We apologize for the inconvenience caused by their caffeine-fueled mischief.</string>
+    <string name="no_internet_title">Oops! The internet has vanished into thin air.</string>
+    <string name="no_internet_message">You have the power to bring it back, by tapping on your wifi icon and data icons.</string>
+    <string name="try_again">Try Again!</string>
 </resources>
