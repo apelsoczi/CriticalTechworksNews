@@ -33,7 +33,7 @@ fun PromptScreen(
     handle: (action: StoriesViewIntent) -> Unit
 ) {
     if (landscape) {
-        Row(Modifier.padding(32.dp)) {
+        Row(Modifier.padding(start = 32.dp, end = 32.dp, bottom = 32.dp)) {
             LottieComposition(
                 rawResId = lottieResId,
                 modifier = Modifier
@@ -80,7 +80,7 @@ fun PromptScreen(
                     text = stringResource(id = titleResId),
                     style = Typography.headlineMedium,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 48.dp, bottom = 32.dp),
+                    modifier = Modifier.padding(top = 16.dp, bottom = 32.dp),
                 )
                 LottieComposition(
                     rawResId = lottieResId,

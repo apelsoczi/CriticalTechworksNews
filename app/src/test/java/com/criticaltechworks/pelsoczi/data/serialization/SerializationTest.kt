@@ -49,7 +49,6 @@ class SerializationTest {
 
         // when
         val apiResponse = json.decodeFromString<ApiResponse>(jsonString.toString())
-        println(apiResponse)
         val articlesJsonArray = successNullsJson.getValue("articles") as JsonArray
         val articleJson = articlesJsonArray.first() as JsonObject
         val sourceJson = articleJson["source"] as JsonObject

@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.criticaltechworks.pelsoczi.R
+import com.criticaltechworks.pelsoczi.data.model.Headline
 import com.criticaltechworks.pelsoczi.data.model.TopStoriesResponse.ApiResponse.Article
 import com.criticaltechworks.pelsoczi.data.model.TopStoriesResponse.ApiResponse.Article.Source
 import com.criticaltechworks.pelsoczi.ui.stories.StoriesViewIntent.RefreshStories
@@ -60,8 +61,8 @@ fun StoriesScreen(
     }
     StoriesScreen(
         loading = viewState.loading,
-        articles = viewState.articles,
-        contentError = viewState.contentError,
+        headlines = viewState.headlines,
+        contentError = viewState.noContent,
         internetError = viewState.internetError,
         landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
         handle = viewModel::handle
@@ -72,7 +73,7 @@ fun StoriesScreen(
 @Composable
 private fun StoriesScreen(
     loading: Boolean,
-    articles: List<Article>,
+    headlines: List<Headline>,
     contentError: Boolean,
     internetError: Boolean,
     landscape: Boolean,
@@ -88,11 +89,11 @@ private fun StoriesScreen(
                 handle = handle,
             )
         }
-        articles.isNotEmpty() -> {
+        headlines.isNotEmpty() -> {
             if (landscape.not()) {
                 LazyColumn(Modifier.fillMaxHeight()) {
-                    items(articles) { article ->
-                        PortraitHeadline(article)
+                    items(headlines) { headline ->
+                        PortraitHeadline(headline)
                     }
                 }
             } else {
@@ -105,10 +106,10 @@ private fun StoriesScreen(
                     }
                 }
                 VerticalPager(
-                    pageCount = articles.size,
+                    pageCount = headlines.size,
                     pageSize = viewPort,
                 ) { index ->
-                    HeadlinesLandscape(articles[index])
+                    HeadlinesLandscape(headlines[index])
                 }
             }
         }
@@ -140,7 +141,7 @@ fun LoadingSpinner(
 
 @Composable
 fun PortraitHeadline(
-    article: Article,
+    headline: Headline,
 ) {
     Card(
         modifier = Modifier
@@ -150,7 +151,7 @@ fun PortraitHeadline(
     ) {
         Column(Modifier.fillMaxSize()) {
             Text(
-                text = article.title,
+                text = headline.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -161,13 +162,13 @@ fun PortraitHeadline(
                     .fillMaxWidth()
                     .height(220.dp)
                     .padding(bottom = 4.dp),
-                model = article.urlToImage,
+                model = headline.cachedImageKey,
                 contentScale = ContentScale.FillWidth,
                 contentDescription = null,
             )
             Row(Modifier.fillMaxWidth()) {
                 Text(
-                    text = article.author,
+                    text = headline.author,
                     modifier = Modifier
                         .padding(vertical = 4.dp, horizontal = 16.dp),
                     style = Typography.labelMedium,
@@ -180,14 +181,14 @@ fun PortraitHeadline(
                 Text(
                     text = DateTimeFormatter.ofPattern("MMMM d, H:mm a")
                         .withZone(ZoneId.systemDefault())
-                        .format(article.publishedAt),
+                        .format(headline.published),
                     modifier = Modifier
                         .padding(vertical = 4.dp, horizontal = 16.dp),
                     style = Typography.labelMedium,
                 )
             }
             Text(
-                text = article.description,
+                text = headline.description,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp, horizontal = 16.dp),
@@ -199,15 +200,14 @@ fun PortraitHeadline(
     }
 }
 
-
 @Composable
 private fun HeadlinesLandscape(
-    article: Article
+    headline: Headline
 ) {
     Box(Modifier.fillMaxSize()) {
         AsyncImage(
             modifier = Modifier.fillMaxSize(),
-            model = article.urlToImage,
+            model = headline.cachedImageKey,
             contentScale = ContentScale.FillWidth,
             contentDescription = null,
         )
@@ -217,7 +217,7 @@ private fun HeadlinesLandscape(
                 .background(Color.White.copy(alpha = 0.7F))
         ) {
             Text(
-                text = article.title,
+                text = headline.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
@@ -231,12 +231,12 @@ private fun HeadlinesLandscape(
             ) {
                 Text(
                     text = buildAnnotatedString {
-                        if (article.author.isNotEmpty()) {
+                        if (headline.author.isNotEmpty()) {
                             withStyle(
                                 Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                     .toSpanStyle()
                             ) {
-                                append(article.author)
+                                append(headline.author)
                             }
                             withStyle(Typography.bodyMedium.toSpanStyle()) {
                                 append(" on ")
@@ -249,12 +249,12 @@ private fun HeadlinesLandscape(
                             append(
                                 DateTimeFormatter.ofPattern("MMMM d, H:mm a")
                                     .withZone(ZoneId.systemDefault())
-                                    .format(article.publishedAt)
+                                    .format(headline.published)
                             )
                             append(": ")
                         }
                         withStyle(Typography.bodyMedium.toSpanStyle()) {
-                            append(article.description)
+                            append(headline.description)
                         }
                     },
                     style = Typography.bodyMedium,
@@ -274,7 +274,7 @@ fun HeadlinesPortraitPreview() {
         CriticalTechworksNewsTheme {
             StoriesScreen(
                 loading = false,
-                articles = listOf(one, two, three),
+                headlines = listOf(headlineOne, headlineTwo, headlineThree),
                 contentError = false,
                 internetError = false,
                 landscape = false,
@@ -291,7 +291,7 @@ fun HeadlinesLandscapePreview() {
         CriticalTechworksNewsTheme {
             StoriesScreen(
                 loading = false,
-                articles = listOf(one, two, three),
+                headlines = listOf(headlineOne, headlineTwo, headlineThree),
                 contentError = false,
                 internetError = false,
                 landscape = false,
@@ -305,7 +305,7 @@ private val source = Source(
     id = "bbc-news",
     name = "BBC News",
 )
-private val one = Article(
+private val articleOne = Article(
     source = source,
     author = "BBC News",
     title = "Erdogan hails election victory but Turkey left divided",
@@ -315,8 +315,12 @@ private val one = Article(
     publishedAt = Instant.parse("2023-05-29T00:22:14.6028734Z"),
     content = "Recep Tayyip Erdogan's supporters celebrated well into the night after Turkey's long-time president secured another five years in power.",
 )
+private val headlineOne = Headline(
+    articleOne,
+    "",
+)
 
-private val two = Article(
+private val articleTwo = Article(
     source = source,
     author = "BBC News",
     title = "US debt ceiling deal ready for Congress vote - President Joe Biden",
@@ -326,8 +330,12 @@ private val two = Article(
     publishedAt = Instant.parse("2023-05-28T22:52:15.6961467Z"),
     content = "US President Joe Biden and Republican House Speaker Kevin McCarthy have reached a bipartisan deal to raise the US debt ceiling and avert a default, President Biden has said.",
 )
+private val headlineTwo = Headline(
+    articleTwo,
+    "",
+)
 
-private val three = Article(
+private val articleThree = Article(
     source = source,
     author = "BBC News",
     title = "Lake Maggiore tourist boat carrying 20 overturns, with one dead",
@@ -337,8 +345,12 @@ private val three = Article(
     publishedAt = Instant.parse("2023-05-28T21:07:12.5113529Z"),
     content = "A boat carrying at least 20 people has overturned on Lake Maggiore in northern Italy.\\r\\nItalian media is reporting that one person has died and at least three others remain missing.\\r\\nItaly's fire serv…",
 )
+private val headlineThree = Headline(
+    articleThree,
+    "",
+)
 
-private val nulls = Article(
+private val articleNulls = Article(
     source = source,
     author = "",
     title = "Lake Maggiore tourist boat carrying 20 overturns, with one dead",
@@ -347,4 +359,8 @@ private val nulls = Article(
     urlToImage = "",
     publishedAt = Instant.parse("2023-05-28T21:07:12.5113529Z"),
     content = "",
+)
+private val headlineNulls = Headline(
+    articleNulls,
+    "",
 )
