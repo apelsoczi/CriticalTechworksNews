@@ -69,7 +69,7 @@ fun StoriesScreen(
         landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
         handle = {
             when (it) {
-                is RefreshStories -> viewModel::handle
+                is RefreshStories -> viewModel.handle(it)
                 is ReadStory -> {
                     onReadStory(it.headline)
                 }
