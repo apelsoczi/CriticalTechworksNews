@@ -102,7 +102,7 @@ class NewsRepositoryTest {
     }
 
     @Test
-    fun `server response is valid, and articles are sorted desc emits headlines`() = runTest {
+    fun `server response valid, sort articles desc, headlines cache, and emit headlines`() = runTest {
         // given
         val json = successJson
         coEvery { newsDataSource.fetchTopStories() } returns Ok(200, json.toString())
@@ -118,18 +118,33 @@ class NewsRepositoryTest {
         newsRepository.stories().test {
             // then
             awaitItem().let {
-                println(it)
                 assertThat(it).isInstanceOf(Headlines::class.java)
                 it as Headlines
                 assertThat(it.headlines).isNotEmpty()
                 assertThat(it.headlines[0].published.isAfter(it.headlines[1].published))
                 assertThat(it.headlines[1].published.isAfter(it.headlines[2].published))
                 assertThat(it.headlines[2].published.isAfter(it.headlines[3].published))
+                assertThat(newsRepository.getHeadlinesCache()).hasSize(4)
+                assertThat(newsRepository.headline(it.headlines[0].url)).isNotNull()
             }
             awaitComplete()
         }
         coVerify { newsDataSource.fetchTopStories(any()) }
         coVerify { coilDataSource.downloadImages(any()) }
+    }
+
+    @Test
+    fun `subsequent calls to load article data clears the cache`() = runTest {
+        // given
+        `server response valid, sort articles desc, headlines cache, and emit headlines`()
+        coEvery { newsDataSource.fetchTopStories() } returns Failure(mockk())
+        // when
+        newsRepository.stories().test {
+            // then
+            skipItems(1)
+            awaitComplete()
+            assertThat(newsRepository.getHeadlinesCache()).isEmpty()
+        }
     }
 
 }

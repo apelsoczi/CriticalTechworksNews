@@ -3,6 +3,7 @@ package com.criticaltechworks.pelsoczi.ui.stories
 import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,7 +43,7 @@ import com.criticaltechworks.pelsoczi.R
 import com.criticaltechworks.pelsoczi.data.model.Headline
 import com.criticaltechworks.pelsoczi.data.model.TopStoriesResponse.ApiResponse.Article
 import com.criticaltechworks.pelsoczi.data.model.TopStoriesResponse.ApiResponse.Article.Source
-import com.criticaltechworks.pelsoczi.ui.stories.StoriesViewIntent.RefreshStories
+import com.criticaltechworks.pelsoczi.ui.stories.StoriesViewIntent.*
 import com.criticaltechworks.pelsoczi.ui.stories.StoriesViewState.*
 import com.criticaltechworks.pelsoczi.ui.theme.CriticalTechworksNewsTheme
 import com.criticaltechworks.pelsoczi.ui.theme.Typography
@@ -54,6 +55,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun StoriesScreen(
     viewModel: StoriesViewModel = hiltViewModel(),
+    onReadStory: (headline: Headline) -> Unit
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
     RememberSaveableEffect {
@@ -65,7 +67,14 @@ fun StoriesScreen(
         contentError = viewState.noContent,
         internetError = viewState.internetError,
         landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
-        handle = viewModel::handle
+        handle = {
+            when (it) {
+                is RefreshStories -> viewModel::handle
+                is ReadStory -> {
+                    onReadStory(it.headline)
+                }
+            }
+        }
     )
 }
 
@@ -93,7 +102,10 @@ private fun StoriesScreen(
             if (landscape.not()) {
                 LazyColumn(Modifier.fillMaxHeight()) {
                     items(headlines) { headline ->
-                        PortraitHeadline(headline)
+                        PortraitHeadline(
+                            headline = headline,
+                            handle = handle
+                        )
                     }
                 }
             } else {
@@ -109,7 +121,10 @@ private fun StoriesScreen(
                     pageCount = headlines.size,
                     pageSize = viewPort,
                 ) { index ->
-                    HeadlinesLandscape(headlines[index])
+                    HeadlinesLandscape(
+                        headline = headlines[index],
+                        handle = handle,
+                    )
                 }
             }
         }
@@ -142,11 +157,15 @@ fun LoadingSpinner(
 @Composable
 fun PortraitHeadline(
     headline: Headline,
+    handle: (action: StoriesViewIntent) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp),
+            .padding(bottom = 8.dp)
+            .clickable {
+                handle(ReadStory(headline))
+            },
         shape = RectangleShape,
     ) {
         Column(Modifier.fillMaxSize()) {
@@ -167,12 +186,14 @@ fun PortraitHeadline(
                 contentDescription = null,
             )
             Row(Modifier.fillMaxWidth()) {
-                Text(
-                    text = headline.author,
-                    modifier = Modifier
-                        .padding(vertical = 4.dp, horizontal = 16.dp),
-                    style = Typography.labelMedium,
-                )
+                headline.author.takeIf { it.isNotEmpty() }?.let {
+                    Text(
+                        text = it,
+                        modifier = Modifier
+                            .padding(vertical = 4.dp, horizontal = 16.dp),
+                        style = Typography.labelMedium,
+                    )
+                }
                 Spacer(
                     modifier = Modifier
                         .weight(1F)
@@ -187,24 +208,33 @@ fun PortraitHeadline(
                     style = Typography.labelMedium,
                 )
             }
-            Text(
-                text = headline.description,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp, horizontal = 16.dp),
-                style = Typography.bodyMedium,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-            )
+            headline.description.takeIf { it.isNotEmpty() }?.let {
+                Text(
+                    text = it,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp, horizontal = 16.dp),
+                    style = Typography.bodyMedium,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun HeadlinesLandscape(
-    headline: Headline
+    headline: Headline,
+    handle: (action: StoriesViewIntent) -> Unit
 ) {
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .clickable {
+                handle(ReadStory(headline))
+            }
+    ) {
         AsyncImage(
             modifier = Modifier.fillMaxSize(),
             model = headline.cachedImageKey,
@@ -232,11 +262,13 @@ private fun HeadlinesLandscape(
                 Text(
                     text = buildAnnotatedString {
                         if (headline.author.isNotEmpty()) {
-                            withStyle(
-                                Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                                    .toSpanStyle()
-                            ) {
-                                append(headline.author)
+                            headline.author.takeIf { it.isNotBlank() }?.let {
+                                withStyle(
+                                    Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                                        .toSpanStyle()
+                                ) {
+                                    append(it)
+                                }
                             }
                             withStyle(Typography.bodyMedium.toSpanStyle()) {
                                 append(" on ")
@@ -253,8 +285,10 @@ private fun HeadlinesLandscape(
                             )
                             append(": ")
                         }
-                        withStyle(Typography.bodyMedium.toSpanStyle()) {
-                            append(headline.description)
+                        headline.description.takeIf { it.isNotBlank() }?.let {
+                            withStyle(Typography.bodyMedium.toSpanStyle()) {
+                                append(it)
+                            }
                         }
                     },
                     style = Typography.bodyMedium,

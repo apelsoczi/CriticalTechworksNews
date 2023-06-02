@@ -1,5 +1,6 @@
 package com.criticaltechworks.pelsoczi.data.repository
 
+import androidx.annotation.VisibleForTesting
 import com.criticaltechworks.pelsoczi.data.model.Headline
 import com.criticaltechworks.pelsoczi.data.model.NetworkResponse.Ok
 import com.criticaltechworks.pelsoczi.data.model.Stories
@@ -25,12 +26,15 @@ class NewsRepository @Inject constructor(
     private val coilDataSource: ImageDataSource,
 ) {
 
+    private val headlinesCache: MutableList<Headline> = mutableListOf()
+
     /**
      * Retrieve articles and stories from the NewsApi for the news source.
      *
      * @return the [Headlines] returned by the server, [NoContent], or [Offline].
      */
     suspend fun stories(): Flow<Stories> = flow {
+        headlinesCache.clear()
         val response = networkDataSource.fetchTopStories()
         if (response is Ok) {
             if (response.isSuccess) {
@@ -46,6 +50,7 @@ class NewsRepository @Inject constructor(
                 }
                 val headlines = images.map { Headline(it.first, it.second) }
                     .sortedByDescending { it.published }
+                headlinesCache.addAll(headlines)
                 emit(Headlines(headlines))
             } else {
                 json.decodeFromString<ApiError>(response.body)
@@ -54,6 +59,15 @@ class NewsRepository @Inject constructor(
         } else {
             emit(Offline)
         }
+    }
+
+    fun headline(headlineUrl: String): Headline? {
+        return headlinesCache.find { it.url == headlineUrl }
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+    fun getHeadlinesCache(): List<Headline> {
+        return headlinesCache.toList()
     }
 
 }

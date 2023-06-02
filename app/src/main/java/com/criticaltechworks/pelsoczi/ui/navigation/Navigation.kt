@@ -9,12 +9,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.criticaltechworks.pelsoczi.R
+import com.criticaltechworks.pelsoczi.data.model.Headline
+import com.criticaltechworks.pelsoczi.ui.detail.DetailScreen
+import com.criticaltechworks.pelsoczi.ui.navigation.NavigationDestination.DetailDestination
+import com.criticaltechworks.pelsoczi.ui.navigation.NavigationDestination.DetailDestination.ARG_URL
 import com.criticaltechworks.pelsoczi.ui.navigation.NavigationDestination.StoriesDestination
 import com.criticaltechworks.pelsoczi.ui.stories.StoriesScreen
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,8 +56,24 @@ fun NewsApiNavHost(
         startDestination = StoriesDestination.route,
         modifier = modifier,
     ) {
-        composable(StoriesDestination.route) {
-            StoriesScreen()
+        composable(route = StoriesDestination.route) {
+            StoriesScreen(
+                onReadStory = { headline: Headline ->
+                    navController.navigate(
+                        route = "${DetailDestination.route}/${URLEncoder.encode(headline.url)}",
+                    )
+                }
+            )
+        }
+        composable(
+            route = DetailDestination.routeWithArgs,
+            arguments = listOf(
+                navArgument(ARG_URL) { type = NavType.StringType }
+            )
+        ) {
+            DetailScreen(
+                navController = navController
+            )
         }
     }
 }
